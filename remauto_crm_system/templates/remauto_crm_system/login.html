@@ -1,12 +1,15 @@
 {% extends 'remauto_crm_system/base.html' %}
 
-{% block title %}Login{% endblock %}
+{% block title %}
+  Login
+{% endblock %}
 
 {% block content %}
-    <h2 class="title">Login</h2>
-    <form class="form" method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button class="button" type="submit">Login</button>
-    </form>
+  <a href=" {% url 'authorization' %} "><button><-</button></a>
+  <h2 class="title">Login</h2>
+  <form class="form" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="button" type="submit">Login</button>
+  </form>
 {% endblock %}

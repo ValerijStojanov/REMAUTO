@@ -3,6 +3,7 @@
 {% block title %}Register{% endblock %}
 
 {% block content %}
+<a href=" {% url 'authorization' %} "><button> <- </button></a>
     <h2>Register</h2>
     <form method="post">
         {% csrf_token %}

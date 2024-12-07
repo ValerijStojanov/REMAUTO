@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -10,20 +12,27 @@
       {% endblock %}
     </title>
   </head>
+
+  <style>
+
+    html {
+      background-color: black;
+    }
+
+  </style>
   <body class="container">
-    <nav>
+    
       <div>
         {% if user.is_authenticated %}
           <a class="contrast" style="font-weight: 600; color: red !important;" href="{% url 'logout' %}">Logout</a>
           <a class="contrast" href="{% url 'dashboard' %}">Dashboard</a>
-        {% else %}
+        {% comment %} {% else %}
           <a class="contrast" href="{% url 'logout' %}">Login</a>
-          <a class="contrast" href="{% url 'register' %}">Register</a>
+          <a class="contrast" href="{% url 'register' %}">Register</a> {% endcomment %}
         {% endif %}
       </div>
-    </nav>
+    
 
-    <hr />
 
     {% block content %}
       <!-- Content of each page will go here -->

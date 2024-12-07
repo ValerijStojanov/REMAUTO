@@ -3,131 +3,184 @@
   <h1>Добро пожаловать, {{ user.username }}!</h1>
   <h2>Ваши клиенты и заказы:</h2>
 
-  <style> 
-
-    table {
-        display: block;
-        overflow: scroll;
+  <style>
+    .client-card {
+      background-color: #2c2d39;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      padding: 20px;
+      color: white;
     }
-
+    
+    .client-info {
+      margin-bottom: 20px;
+    }
+    
+    .orders-section {
+      margin-top: 10px;
+    }
+    
+    .orders-container {
+      display: block;
+    }
+    
+    .orders-container.active {
+      display: none;
+      transition: max-height 0.3s ease;
+      overflow: hidden;
+    }
+    
+    .toggle-orders-btn {
+      margin-top: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    .order-item {
+      padding: 10px;
+      border-bottom: 1px solid #444;
+    }
+    
+    .order-item:last-child {
+      border-bottom: none;
+    }
+    
+    .add-service-form {
+      margin-top: 15px;
+    }
+    
+    .add-service-form label,
+    .add-service-form select,
+    .add-service-form button {
+      display: block;
+      margin-bottom: 10px;
+    }
   </style>
-  <!-- Таблица клиентов -->
+
+  <!-- Карточки клиентов -->
   {% for client_data in clients_with_orders %}
-  <!-- Основная таблица клиента -->
-  <table class="container-fluid">
-    <tbody>
-      <tr>
-        <td colspan="4" style="background-color: #2c2d39; text-align: left; padding: 1rem 1rem">
-          <h4 style="margin-bottom: 0;">Клиент</h4>
-        </td>
-      </tr>
-      <tr>
-        <th>Имя клиента</th>
-        <th>Фамилия клиента</th>
-        <th>Email</th>
-        <th>Телефон</th>
-      </tr>
-      <tr>
-        <td><b>{{ client_data.client.name }}</b></td>
-        <td><b>{{ client_data.client.surname }}</b></td>
-        <td><b>{{ client_data.client.email|default:"-" }}</b></td>
-        <td><b>{{ client_data.client.phone_number|default:"-" }}</b></td>
-      </tr>
-      <tr>
-        <td colspan="4" style="background-color: #2c2d39; text-align: left; padding: 1rem 1rem">
-          <h4 style="margin-bottom: 0;">Заказ</h4>
-        </td>
-      </tr>
-      <tr>
-        <th>ID</th>
-        <th>Название услуги</th>
-        <th>Дата создания</th>
-        <th>Статус</th>
-      </tr>
-      {% for order_data in client_data.orders %}
-      <tr>
-        <td><b>{{ order_data.order.id }}</b></td>
-        <td><b>{{ order_data.order.service.name }}</b></td>
-        <td><b>{{ order_data.order.create_dt }}</b></td>
-        <td>
-          {% for status in order_data.statuses %}
-          <b>{{ status.get_status_display }}</b>
-          {% empty %}
-          Нет статусов
-          {% endfor %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="4" style="background-color: #2c2d39; text-align: left;">Нет услуг</td>
-      </tr>
-      {% endfor %}
-      <!-- Форма для добавления услуги -->
-      <tr>
-        <td colspan="4" style="text-align: center; padding: 1rem;">
-          <form method="post" action="{% url 'dashboard' %}">
-            {% csrf_token %}
-            <input type="hidden" name="form_type" value="add_service">
-            <input type="hidden" name="client_id" value="{{ client_data.client.id }}">
-            <div>
-              <label for="service-{{ client_data.client.id }}">Выберите услугу:</label>
-              <select name="service" id="service-{{ client_data.client.id }}" required>
-                <option value="" disabled selected>Выберите услугу</option>
-                {% for service in service_form.fields.service.queryset %}
-                <option value="{{ service.id }}">{{ service.name }}</option>
+    <div class="client-card">
+      <div class="client-info">
+        <h3>Клиент</h3>
+        <p>
+          <strong>Имя:</strong> {{ client_data.client.name }}
+        </p>
+        <p>
+          <strong>Фамилия:</strong> {{ client_data.client.surname }}
+        </p>
+        <p>
+          <strong>Email:</strong> {{ client_data.client.email|default:'-' }}
+        </p>
+        <p>
+          <strong>Телефон:</strong> {{ client_data.client.phone_number|default:'-' }}
+        </p>
+      </div>
+
+      <div class="orders-section">
+        <button class="toggle-orders-btn" onclick="toggleOrders({{ client_data.client.id }})">Скрыть заказы</button>
+        <div id="orders-container-{{ client_data.client.id }}" class="orders-container">
+          <h4>Заказы</h4>
+          {% for order_data in client_data.orders %}
+            <div class="order-item">
+              <p>
+                <strong>ID:</strong> {{ order_data.order.id }}
+              </p>
+              <p>
+                <strong>Название услуги:</strong> {{ order_data.order.service.name }}
+              </p>
+              <p>
+                <strong>Дата создания:</strong> {{ order_data.order.create_dt }}
+              </p>
+              <p>
+                <strong>Статус:</strong>
+                {% for status in order_data.statuses %}
+                  {{ status.get_status_display }}
+                {% empty %}
+                  Нет статусов
                 {% endfor %}
-              </select>
+              </p>
             </div>
-            <button type="submit">Добавить услугу</button>
-          </form>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+          {% empty %}
+            <p>У клиента нет заказов</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Форма для добавления услуги -->
+      <div class="add-service-form">
+        <form method="post" action="{% url 'dashboard' %}">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="add_service" />
+          <input type="hidden" name="client_id" value="{{ client_data.client.id }}" />
+          <label for="service-{{ client_data.client.id }}">Выберите услугу:</label>
+          <select name="service" id="service-{{ client_data.client.id }}" required>
+            <option value="" disabled selected>Выберите услугу</option>
+            {% for service in service_form.fields.service.queryset %}
+              <option value="{{ service.id }}">{{ service.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit">Добавить услугу</button>
+        </form>
+      </div>
+    </div>
   {% empty %}
-  <h2 style="color: orange#2c2d39;">Клиентов пока нет</h2>
+    <h2 style="color: orangered;">Клиентов пока нет</h2>
   {% endfor %}
 
   <!-- Форма для добавления клиента -->
   <h2>Добавить клиента</h2>
   <form method="post" action="{% url 'dashboard' %}">
     {% csrf_token %}
-    <input type="hidden" name="form_type" value="add_client"> <!-- Скрытое поле для идентификации формы -->
+    <input type="hidden" name="form_type" value="add_client" />
     <div>
       {{ form.name.label_tag }}
       {{ form.name }}
       {% if form.name.errors %}
-      <div>{{ form.name.errors }}</div>
+        <div>{{ form.name.errors }}</div>
       {% endif %}
     </div>
     <div>
       {{ form.surname.label_tag }}
       {{ form.surname }}
       {% if form.surname.errors %}
-      <div>{{ form.surname.errors }}</div>
+        <div>{{ form.surname.errors }}</div>
       {% endif %}
     </div>
     <div>
       {{ form.phone_number.label_tag }}
       {{ form.phone_number }}
       {% if form.phone_number.errors %}
-      <div>{{ form.phone_number.errors }}</div>
+        <div>{{ form.phone_number.errors }}</div>
       {% endif %}
     </div>
     <div>
       {{ form.email.label_tag }}
       {{ form.email }}
       {% if form.email.errors %}
-      <div>{{ form.email.errors }}</div>
+        <div>{{ form.email.errors }}</div>
       {% endif %}
     </div>
     <div>
       {{ form.services.label_tag }}
       {{ form.services }}
       {% if form.services.errors %}
-      <div>{{ form.services.errors }}</div>
+        <div>{{ form.services.errors }}</div>
       {% endif %}
     </div>
     <button type="submit">Сохранить</button>
   </form>
+
+  <script>
+    function toggleOrders(clientId) {
+      const container = document.getElementById(`orders-container-${clientId}`)
+      const button = container.previousElementSibling
+    
+      container.classList.toggle('active')
+      button.textContent = container.classList.contains('active') ? 'Показать заказы' : 'Скрыть заказы'
+    }
+  </script>
 {% endblock %}

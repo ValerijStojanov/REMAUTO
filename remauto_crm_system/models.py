@@ -60,9 +60,13 @@ class Order(models.Model):
     client = models.ForeignKey(Client, on_delete=models.PROTECT)
     account = models.ForeignKey(Account, on_delete=models.PROTECT)
     create_dt = models.DateTimeField(auto_now_add=True)
+    vehicle_info = models.CharField(max_length=255, blank=True, null=True)  # Новое текстовое поле
+
 
     def __str__(self):
-        return f'Order #{self.id} | {self.service.name} | {self.client.name} {self.client.surname}'
+        vehicle_info_display = f" | Vehicle: {self.vehicle_info}" if self.vehicle_info else ""
+        return f'Order #{self.id} | {self.service.name} | {self.client.name} {self.client.surname}{vehicle_info_display}'
+
 
 
 class OrderStatus(models.Model):

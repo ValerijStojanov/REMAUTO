@@ -147,7 +147,7 @@ class ClientAdmin(admin.ModelAdmin):
 
 @admin.register(models.Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'service', 'client', 'account', 'create_dt')
+    list_display = ('id', 'service', 'client', 'account', 'create_dt', 'vehicle_info')
     search_fields = ('id', 'service__name', 'client__name', 'client__surname', 'account__username')
 
     def get_search_results(self, request, queryset, search_term):
@@ -163,20 +163,15 @@ class OrderAdmin(admin.ModelAdmin):
 @admin.register(models.OrderStatus)
 class OrderStatusAdmin(admin.ModelAdmin):
     
-    list_display = ('id', 'status_display', 'is_reopened_display', 'order_service', 'order_id_link',  'client_name_link', 'account_id_display', 'create_dt')
-    
+    list_display = ('id', 'status_display', 'is_reopened_display', 'order_service', 'order_id_link', 'client_name_link', 'account_id_display', 'vehicle_info_display', 'create_dt')
     
     list_filter = ('status', 'is_reopened', 'account')
     
-    
-    search_fields = ('order__id', 'order__client__name', 'order__client__surname', 'order__service__name')
-
+    search_fields = ('order__id', 'order__client__name', 'order__client__surname', 'order__service__name', 'order__vehicle_info')
     
     ordering = ('-create_dt',)
-
     
     autocomplete_fields = ['order']
-
     
     def account_id_display(self, obj):
         if obj.order.account:
@@ -190,18 +185,15 @@ class OrderStatusAdmin(admin.ModelAdmin):
     order_service.short_description = 'Service'
     
     def order_id_link(self, obj):
-        
         url = reverse('admin:remauto_crm_system_order_change', args=[obj.order.id])
         return format_html('<a href="{}">{}</a>', url, obj.order.id)
     order_id_link.short_description = 'Order ID'
-    
     
     def is_reopened_display(self, obj):
         if obj.is_reopened:
             return format_html('<span style="color: green; font-weight: bold;">Reopened</span>')
         return format_html('<span style="color: gray;">No</span>')
     is_reopened_display.short_description = 'Reopened'
-
     
     def status_display(self, obj):
         status_color = {
@@ -214,7 +206,6 @@ class OrderStatusAdmin(admin.ModelAdmin):
         color = status_color.get(obj.status, "black")
         return format_html('<span style="color: {};">{}</span>', color, obj.get_status_display())
     status_display.short_description = 'Status'
-
     
     def client_name_link(self, obj):
         client = obj.order.client
@@ -222,6 +213,9 @@ class OrderStatusAdmin(admin.ModelAdmin):
         return format_html('<a href="{}">{}</a>', url, f"{client.name} {client.surname} (ID: {client.id})")
     client_name_link.short_description = 'Client ( ID )'
 
+    def vehicle_info_display(self, obj):
+        return obj.order.vehicle_info or "Not specified"
+    vehicle_info_display.short_description = 'Vehicle Info'
     
     actions = ['mark_active']
 
@@ -229,6 +223,7 @@ class OrderStatusAdmin(admin.ModelAdmin):
         updated_count = queryset.update(status=models.OrderStatus.Status.ACTIVE)
         self.message_user(request, f"{updated_count} orders marked as ACTIVE.")
     mark_active.short_description = 'Mark selected orders as ACTIVE'
+
 
 
 

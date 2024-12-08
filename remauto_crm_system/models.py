@@ -33,7 +33,7 @@ class Client(models.Model):
         default=ClientStatus.NEW
     )
 
-    active_services = models.ManyToManyField('Service', blank=True)
+    # active_services = models.ManyToManyField('Service', blank=True)
 
     def __str__(self):
         return f"{self.name} {self.surname}"

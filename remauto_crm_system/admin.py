@@ -85,7 +85,21 @@ class AccountToClientAdmin(admin.ModelAdmin):
     # Полная информация о клиенте
     def client_details(self, obj):
         client = obj.client
-        active_services = ", ".join(service.name for service in client.active_services.all()) or "The client has no orders yet"
+
+        # Получаем все заказы клиента и извлекаем услуги
+        orders = models.Order.objects.filter(client=client)
+        if orders.exists():
+            # Формируем список <li> с услугами
+            active_services = "".join(
+                f"<li><span style='margin-left: 0rem; font-weight: bold; font-size: 14px'> • {order.service.name}</span></li>"
+                for order in orders
+            )
+            # Оборачиваем в <ul>
+            active_services = f"<ul style='margin-left: 0rem; padding-left: 0rem'>{active_services}</ul>"
+        else:
+            # Если услуг нет
+            active_services = "<b><span style='color: #ff4d4f; margin-left: .5rem;'>The client has no orders yet</span></b>"
+
         return format_html(
             "<div style='padding: .5rem'><strong style='; color: #78acc4'>Client ID:</strong> <span style='margin-left: .5rem; font-weight: bold'>{}</span><br></div>"
             "<div style='padding: .5rem'><strong style='; color: #78acc4'>First Name:</strong> <span style='margin-left: .5rem; font-weight: bold'>{}</span><br></div>"
@@ -95,8 +109,7 @@ class AccountToClientAdmin(admin.ModelAdmin):
             "<div style='padding: .5rem'><strong style='; color: #78acc4'>Address:</strong> <span style='margin-left: .5rem; font-weight: bold'>{}</span><br></div>"
             "<div style='padding: .5rem'><strong style='; color: #78acc4'>Date of Birth:</strong> <span style='margin-left: .5rem; font-weight: bold'>{}</span><br></div>"
             "<div style='padding: .5rem'><strong style='; color: #78acc4'>Client Status:</strong> <span style='margin-left: .5rem; font-weight: bold'>{}</span><br></div>"
-            "<div style='padding: .5rem'><strong style='; color: #78acc4'>Active Services:</strong> <span style='margin-left: .5rem; font-weight: bold'>{}</span><br></div>",
-
+            "<div style='padding: .5rem'><strong style='; color: #78acc4'>Active Services:</strong>{}</div>",
             client.id,
             client.name,
             client.surname,
@@ -105,9 +118,11 @@ class AccountToClientAdmin(admin.ModelAdmin):
             client.address or "—",
             client.date_of_birth or "—",
             client.get_status_display(),
-            active_services
+            format_html(active_services),
         )
     client_details.short_description = "Additional information about the client"
+
+
 
 
 

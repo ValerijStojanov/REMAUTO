@@ -9,7 +9,7 @@ class AccountCreationForm(UserCreationForm):
         fields = ['username', 'email', 'first_name', 'last_name']
 
 class ClientForm(forms.ModelForm):
-    # Поле для выбора услуг
+    
     services = forms.ModelMultipleChoiceField(
         queryset=Service.objects.all(),
         widget=forms.SelectMultiple,
@@ -19,7 +19,7 @@ class ClientForm(forms.ModelForm):
 
     class Meta:
         model = Client
-        fields = ['name', 'surname', 'phone_number', 'email']  # Поля из модели Client
+        fields = ['name', 'surname', 'phone_number', 'email']  
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Введите имя'}),
             'surname': forms.TextInput(attrs={'placeholder': 'Введите фамилию'}),

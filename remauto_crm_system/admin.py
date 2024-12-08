@@ -6,12 +6,13 @@ from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponseRedirect
 from django.utils.html import format_html
 from . import models
-from django.contrib import admin
 from django.utils.html import format_html
 
 
 
-# Кастомный UserAdmin для модели Account
+
+
+
 class CustomAccountAdmin(UserAdmin):
     model = models.Account
 
@@ -49,20 +50,20 @@ class CustomAccountAdmin(UserAdmin):
         return render(request, 'admin/auth/user/change_password.html', context)
 
 
-# Кастомный Admin для модели AccountToClient
+
 class AccountToClientAdmin(admin.ModelAdmin):
     list_display = ('id', 'account_username', 'client_full_name', 'create_dt')
-    search_fields = ('client__name', 'client__surname', 'client__email', 'client__phone_number')  # Для автозаполнения
+    search_fields = ('client__name', 'client__surname', 'client__email', 'client__phone_number')  
     list_filter = ('create_dt', 'account__username')
     ordering = ('-create_dt',)
 
-    # Используем автозаполнение для клиента
+    
     autocomplete_fields = ('client',)
 
-    # Поля только для чтения
+    
     readonly_fields = ('client_details', 'create_dt')
 
-    # Группировка полей в секции
+    
     fieldsets = (
         ('Информация об аккаунте', {
             'fields': ('account',),
@@ -75,32 +76,32 @@ class AccountToClientAdmin(admin.ModelAdmin):
         }),
     )
 
-    # Кастомное отображение имени пользователя аккаунта
+    
     def account_username(self, obj):
-        return obj.account.username
+        return f" {obj.account.username}" 
     account_username.short_description = 'Account Username'
 
-    # Кастомное отображение полного имени клиента
+    
     def client_full_name(self, obj):
         return f"{obj.client.name} {obj.client.surname}"
     client_full_name.short_description = 'Client Full Name'
 
-    # Полная информация о клиенте
+    
     def client_details(self, obj):
         client = obj.client
 
-        # Получаем все заказы клиента и извлекаем услуги
+        
         orders = models.Order.objects.filter(client=client)
         if orders.exists():
-            # Формируем список <li> с услугами
+            
             active_services = "".join(
                 f"<li><span style='margin-left: 0rem; font-weight: bold; font-size: 14px'> • {order.service.name}</span></li>"
                 for order in orders
             )
-            # Оборачиваем в <ul>
+            
             active_services = f"<ul style='margin-left: 0rem; padding-left: 0rem'>{active_services}</ul>"
         else:
-            # Если услуг нет
+            
             active_services = "<b><span style='color: #ff4d4f; margin-left: .5rem;'>The client has no orders yet</span></b>"
 
         return format_html(
@@ -127,10 +128,6 @@ class AccountToClientAdmin(admin.ModelAdmin):
 
 
 
-
-
-
-# Регистрация модели Client с поиском для автозаполнения
 @admin.register(models.Client)
 class ClientAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'surname', 'email', 'phone_number', 'status')
@@ -139,45 +136,73 @@ class ClientAdmin(admin.ModelAdmin):
 
 
     def get_search_results(self, request, queryset, search_term):
-        # Проверяем, если запрос состоит только из цифр, ищем по ID
+        
         if search_term.isdigit():
             queryset = queryset.filter(id=search_term)
             return queryset, False
-        # В остальных случаях ищем по стандартным полям
+        
         return super().get_search_results(request, queryset, search_term)
+
+
+
+@admin.register(models.Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('id', 'service', 'client', 'account', 'create_dt')
+    search_fields = ('id', 'service__name', 'client__name', 'client__surname', 'account__username')
+
+    def get_search_results(self, request, queryset, search_term):
+        """
+        Настройка поиска для автозаполнения.
+        """
+        if search_term.isdigit():
+            queryset = queryset.filter(id=search_term)  
+            return queryset, False
+        return super().get_search_results(request, queryset, search_term)
+
 
 @admin.register(models.OrderStatus)
 class OrderStatusAdmin(admin.ModelAdmin):
-    # Какие поля отображать в списке
-    list_display = ('id', 'status_display', 'is_reopened_display',  'order_service', 'order_id_link' , 'client_name', 'account', 'create_dt')
     
-    # Поля для фильтрации
+    list_display = ('id', 'status_display', 'is_reopened_display', 'order_service', 'order_id_link',  'client_name_link', 'account_id_display', 'create_dt')
+    
+    
     list_filter = ('status', 'is_reopened', 'account')
     
-    # Поля для поиска
+    
     search_fields = ('order__id', 'order__client__name', 'order__client__surname', 'order__service__name')
 
-    # Сортировка по умолчанию
+    
     ordering = ('-create_dt',)
+
+    
+    autocomplete_fields = ['order']
+
+    
+    def account_id_display(self, obj):
+        if obj.order.account:
+            url = reverse('admin:remauto_crm_system_account_change', args=[obj.order.account.id])
+            return format_html('<a href="{}"> {} ( {} ) </a>', url, obj.order.account.username, obj.order.account.id)
+        return "No account linked"
+    account_id_display.short_description = 'Account ( ID )'
     
     def order_service(self, obj):
         return obj.order.service.name
     order_service.short_description = 'Service'
     
     def order_id_link(self, obj):
-        # Генерируем URL для редактирования заказа
+        
         url = reverse('admin:remauto_crm_system_order_change', args=[obj.order.id])
         return format_html('<a href="{}">{}</a>', url, obj.order.id)
     order_id_link.short_description = 'Order ID'
     
-    # Кастомное отображение "Флаг Reopened"
+    
     def is_reopened_display(self, obj):
         if obj.is_reopened:
             return format_html('<span style="color: green; font-weight: bold;">Reopened</span>')
         return format_html('<span style="color: gray;">No</span>')
     is_reopened_display.short_description = 'Reopened'
 
-    # Кастомное отображение "Статус"
+    
     def status_display(self, obj):
         status_color = {
             models.OrderStatus.Status.CREATED: "blue",
@@ -190,12 +215,14 @@ class OrderStatusAdmin(admin.ModelAdmin):
         return format_html('<span style="color: {};">{}</span>', color, obj.get_status_display())
     status_display.short_description = 'Status'
 
-    # Кастомное отображение имени клиента
-    def client_name(self, obj):
-        return f"{obj.order.client.name} {obj.order.client.surname}"
-    client_name.short_description = 'Client'
+    
+    def client_name_link(self, obj):
+        client = obj.order.client
+        url = reverse('admin:remauto_crm_system_client_change', args=[client.id])
+        return format_html('<a href="{}">{}</a>', url, f"{client.name} {client.surname} (ID: {client.id})")
+    client_name_link.short_description = 'Client ( ID )'
 
-    # Добавление редактируемых чекбоксов для массового изменения статусов
+    
     actions = ['mark_active']
 
     def mark_active(self, request, queryset):
@@ -206,8 +233,7 @@ class OrderStatusAdmin(admin.ModelAdmin):
 
 
 
-# Регистрация остальных моделей
 admin.site.register(models.Account, CustomAccountAdmin)
 admin.site.register(models.Service)
-admin.site.register(models.Order)
+
 admin.site.register(models.AccountToClient, AccountToClientAdmin)

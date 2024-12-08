@@ -33,7 +33,7 @@ class Client(models.Model):
         default=ClientStatus.NEW
     )
 
-    # active_services = models.ManyToManyField('Service', blank=True)
+    
 
     def __str__(self):
         return f"{self.name} {self.surname}"
@@ -62,7 +62,7 @@ class Order(models.Model):
     create_dt = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return  f'{self.client} - {self.service}'
+        return f'Order #{self.id} | {self.service.name} | {self.client.name} {self.client.surname}'
 
 
 class OrderStatus(models.Model):
@@ -75,10 +75,10 @@ class OrderStatus(models.Model):
 
     order = models.ForeignKey(Order, on_delete=models.PROTECT)
     status = models.SmallIntegerField(choices=Status.choices, default=Status.CREATED)  
-    account = models.ForeignKey(Account, on_delete=models.PROTECT)
+    account = models.ForeignKey(Account, on_delete=models.PROTECT, null=True, blank=True)
     create_dt = models.DateTimeField(auto_now_add=True)
-    note_reason = models.TextField(blank=True, null=True)  # Причина изменения
-    is_reopened = models.BooleanField(default=False)  # Флаг "возобновлено"
+    note_reason = models.TextField(blank=True, null=True)  
+    is_reopened = models.BooleanField(default=False)  
 
     def __str__(self):
         reopened_label = " (Reopened)" if self.is_reopened else ""

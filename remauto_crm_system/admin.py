@@ -1,11 +1,14 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import AdminPasswordChangeForm
-from django.urls import path
+from django.urls import path, reverse
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponseRedirect
 from django.utils.html import format_html
 from . import models
+from django.contrib import admin
+from django.utils.html import format_html
+
 
 
 # Кастомный UserAdmin для модели Account
@@ -129,7 +132,6 @@ class AccountToClientAdmin(admin.ModelAdmin):
 
 # Регистрация модели Client с поиском для автозаполнения
 @admin.register(models.Client)
-
 class ClientAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'surname', 'email', 'phone_number', 'status')
     search_fields = ('id', 'name', 'surname')
@@ -144,10 +146,68 @@ class ClientAdmin(admin.ModelAdmin):
         # В остальных случаях ищем по стандартным полям
         return super().get_search_results(request, queryset, search_term)
 
+@admin.register(models.OrderStatus)
+class OrderStatusAdmin(admin.ModelAdmin):
+    # Какие поля отображать в списке
+    list_display = ('id', 'status_display', 'is_reopened_display',  'order_service', 'order_id_link' , 'client_name', 'account', 'create_dt')
+    
+    # Поля для фильтрации
+    list_filter = ('status', 'is_reopened', 'account')
+    
+    # Поля для поиска
+    search_fields = ('order__id', 'order__client__name', 'order__client__surname', 'order__service__name')
+
+    # Сортировка по умолчанию
+    ordering = ('-create_dt',)
+    
+    def order_service(self, obj):
+        return obj.order.service.name
+    order_service.short_description = 'Service'
+    
+    def order_id_link(self, obj):
+        # Генерируем URL для редактирования заказа
+        url = reverse('admin:remauto_crm_system_order_change', args=[obj.order.id])
+        return format_html('<a href="{}">{}</a>', url, obj.order.id)
+    order_id_link.short_description = 'Order ID'
+    
+    # Кастомное отображение "Флаг Reopened"
+    def is_reopened_display(self, obj):
+        if obj.is_reopened:
+            return format_html('<span style="color: green; font-weight: bold;">Reopened</span>')
+        return format_html('<span style="color: gray;">No</span>')
+    is_reopened_display.short_description = 'Reopened'
+
+    # Кастомное отображение "Статус"
+    def status_display(self, obj):
+        status_color = {
+            models.OrderStatus.Status.CREATED: "blue",
+            models.OrderStatus.Status.ACTIVE: "green",
+            models.OrderStatus.Status.COMPLETED: "gray",
+            models.OrderStatus.Status.CANCELLED: "red",
+            models.OrderStatus.Status.DELETED: "black",
+        }
+        color = status_color.get(obj.status, "black")
+        return format_html('<span style="color: {};">{}</span>', color, obj.get_status_display())
+    status_display.short_description = 'Status'
+
+    # Кастомное отображение имени клиента
+    def client_name(self, obj):
+        return f"{obj.order.client.name} {obj.order.client.surname}"
+    client_name.short_description = 'Client'
+
+    # Добавление редактируемых чекбоксов для массового изменения статусов
+    actions = ['mark_active']
+
+    def mark_active(self, request, queryset):
+        updated_count = queryset.update(status=models.OrderStatus.Status.ACTIVE)
+        self.message_user(request, f"{updated_count} orders marked as ACTIVE.")
+    mark_active.short_description = 'Mark selected orders as ACTIVE'
+
+
+
 
 # Регистрация остальных моделей
 admin.site.register(models.Account, CustomAccountAdmin)
 admin.site.register(models.Service)
 admin.site.register(models.Order)
-admin.site.register(models.OrderStatus)
 admin.site.register(models.AccountToClient, AccountToClientAdmin)

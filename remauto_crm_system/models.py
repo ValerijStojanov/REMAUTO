@@ -69,13 +69,17 @@ class OrderStatus(models.Model):
     class Status(models.IntegerChoices):
         CREATED = 0, 'Created'
         ACTIVE = 10, 'Active'
-        INACTIVE = 20, 'Inactive'
+        COMPLETED = 20, 'Completed'
+        CANCELLED = 30, 'Cancelled'
         DELETED = 90, 'Deleted'
 
     order = models.ForeignKey(Order, on_delete=models.PROTECT)
-    status = models.SmallIntegerField(choices=Status.choices)
+    status = models.SmallIntegerField(choices=Status.choices, default=Status.CREATED)  
     account = models.ForeignKey(Account, on_delete=models.PROTECT)
     create_dt = models.DateTimeField(auto_now_add=True)
+    note_reason = models.TextField(blank=True, null=True)  # Причина изменения
+    is_reopened = models.BooleanField(default=False)  # Флаг "возобновлено"
 
     def __str__(self):
-        return  f'{self.order} - {self.get_status_display()}'
+        reopened_label = " (Reopened)" if self.is_reopened else ""
+        return f'{self.order} - {self.get_status_display()}{reopened_label}'
